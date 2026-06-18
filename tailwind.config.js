@@ -38,6 +38,13 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        brand: {
+          green: "#18A354",
+          dark: "#0A3D24",
+          yellow: "#F2C316",
+          light: "#3DD68C",
+          bg: "#F5F5F5",
+        },
       },
       fontFamily: {
         body: ["Inter_500Medium", "sans-serif"],

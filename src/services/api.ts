@@ -1,17 +1,16 @@
 import { Platform } from 'react-native';
 import axios from 'axios';
-import { createMMKV } from 'react-native-mmkv';
+// import { MMKV } from 'react-native-mmkv';
 import { store } from '../store';
 import { logout } from '../store/slices/authSlice';
 
-// Instance of MMKV for storage (with Web fallback)
-export const storage = Platform.OS === 'web'
-  ? {
-      getString: (key: string) => localStorage.getItem(key),
-      set: (key: string, value: string) => localStorage.setItem(key, value),
-      remove: (key: string) => localStorage.removeItem(key)
-    }
-  : createMMKV();
+// Instance of MMKV for storage (Mock temporário para focar na UI sem precisar de Rebuild Nativo)
+const mockStorage = new Map();
+export const storage = {
+  getString: (key: string) => mockStorage.get(key) || null,
+  set: (key: string, value: string) => mockStorage.set(key, value),
+  remove: (key: string) => mockStorage.delete(key)
+};
 
 const BASE_URL = __DEV__ 
   ? 'http://192.168.1.15:5005' // Substitua pelo seu IP local se estiver testando em device físico
