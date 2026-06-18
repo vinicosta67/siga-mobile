@@ -13,8 +13,8 @@ export const storage = {
 };
 
 const BASE_URL = __DEV__ 
-  ? 'http://192.168.1.15:5005' // Substitua pelo seu IP local se estiver testando em device físico
-  : 'https://api-siga.valtre.com.br';
+  ? 'https://strawhat-wealthily-lyla.ngrok-free.dev/api' // Usando ngrok para garantir acesso do celular físico
+  : 'https://api-siga.valtre.com.br/api';
 
 export const api = axios.create({
   baseURL: BASE_URL,
