@@ -4,14 +4,7 @@ import axios from 'axios';
 import { store } from '../store';
 import { logout } from '../store/slices/authSlice';
 
-// Instance of MMKV for storage (Mock temporário para focar na UI sem precisar de Rebuild Nativo)
-const mockStorage = new Map();
-export const storage = {
-  getString: (key: string) => mockStorage.get(key) || null,
-  set: (key: string, value: string) => mockStorage.set(key, value),
-  remove: (key: string) => mockStorage.delete(key)
-};
-
+import { storage } from './storage';
 const BASE_URL = __DEV__ 
   ? 'https://strawhat-wealthily-lyla.ngrok-free.dev/api' // Usando ngrok para garantir acesso do celular físico
   : 'https://api-siga.valtre.com.br/api';

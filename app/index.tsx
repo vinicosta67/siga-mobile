@@ -1,7 +1,7 @@
 import { Redirect } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '../src/store';
-import { storage } from '../src/services/api';
+import { storage } from '../src/services/storage';
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 

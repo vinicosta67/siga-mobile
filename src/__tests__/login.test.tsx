@@ -45,9 +45,9 @@ describe('LoginScreen Component', () => {
   it('renders correctly', () => {
     const { getByPlaceholderText, getByText } = renderWithRedux(<LoginScreen />);
     
-    expect(getByText('SIGA Mobile')).toBeTruthy();
-    expect(getByPlaceholderText('Digite seu e-mail')).toBeTruthy();
-    expect(getByPlaceholderText('Digite sua senha')).toBeTruthy();
+    expect(getByText('Acesso\nProfissional\nBASA.')).toBeTruthy();
+    expect(getByPlaceholderText('seu@bancoamazonia.com.br')).toBeTruthy();
+    expect(getByPlaceholderText('••••••••')).toBeTruthy();
     expect(getByText('Entrar')).toBeTruthy();
   });
 
@@ -59,8 +59,8 @@ describe('LoginScreen Component', () => {
 
     const { getByText, getByPlaceholderText } = renderWithRedux(<LoginScreen />);
     
-    fireEvent.changeText(getByPlaceholderText('Digite seu e-mail'), 'wrong@email.com');
-    fireEvent.changeText(getByPlaceholderText('Digite sua senha'), 'wrongpass');
+    fireEvent.changeText(getByPlaceholderText('seu@bancoamazonia.com.br'), 'wrong@email.com');
+    fireEvent.changeText(getByPlaceholderText('••••••••'), 'wrongpass');
     fireEvent.press(getByText('Entrar'));
 
     // Wait for the error message to appear
@@ -78,8 +78,8 @@ describe('LoginScreen Component', () => {
 
     const { getByText, getByPlaceholderText } = renderWithRedux(<LoginScreen />);
     
-    fireEvent.changeText(getByPlaceholderText('Digite seu e-mail'), 'test@valtre.com');
-    fireEvent.changeText(getByPlaceholderText('Digite sua senha'), 'password123');
+    fireEvent.changeText(getByPlaceholderText('seu@bancoamazonia.com.br'), 'test@valtre.com');
+    fireEvent.changeText(getByPlaceholderText('••••••••'), 'password123');
     fireEvent.press(getByText('Entrar'));
 
     await waitFor(() => {

@@ -5,7 +5,7 @@ trigger: always_on
 ---
 description: Guidelines for writing clean, maintainable, and human-readable code. Apply these rules when writing or reviewing code to ensure consistency and quality.
 globs: ["**/*"]
-alwaysApply: false
+alwaysApply: true
 ---
 # Clean Code Guidelines
 

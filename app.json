@@ -3,6 +3,7 @@
     "name": "SIGA Mobile",
     "slug": "siga-mobile",
     "version": "1.0.0",
+    "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "sigamobile",
@@ -26,6 +27,7 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/withGradleVersion",
       [
         "expo-splash-screen",
         {
