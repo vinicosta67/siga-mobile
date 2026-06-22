@@ -2,28 +2,35 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 
+import { useRouter } from 'expo-router';
+
 interface MenuItemProps {
   title: string;
   subtitle?: string;
   icon: keyof typeof MaterialCommunityIcons.glyphMap | keyof typeof MaterialIcons.glyphMap;
   color: string;
   isMaterial?: boolean;
+  route?: string;
 }
 
 const MENU_ITEMS: MenuItemProps[] = [
-  { title: 'Oportunidades', subtitle: 'Novas linhas de crédito', icon: 'star-circle-outline', color: '#F59E0B', isMaterial: false },
-  { title: 'Crédito Pré-Aprovado', subtitle: '3 ofertas disponíveis', icon: 'check-circle-outline', color: '#18A354', isMaterial: false },
+  { title: 'Oportunidades', subtitle: 'Novas linhas de crédito', icon: 'star-circle-outline', color: '#F59E0B', isMaterial: false, route: '/(credito)/oportunidades' },
+  { title: 'Crédito Pré-Aprovado', subtitle: '3 ofertas disponíveis', icon: 'check-circle-outline', color: '#18A354', isMaterial: false, route: '/(credito)/pre-aprovado' },
   { title: 'Simular Crédito', subtitle: 'Faça uma simulação agora', icon: 'calculate', color: '#3B82F6', isMaterial: true },
-  { title: 'Minhas Propostas', subtitle: 'Acompanhe suas solicitações', icon: 'file-document-outline', color: '#8B5CF6', isMaterial: false },
-  { title: 'Meus Contratos', subtitle: 'Gerencie seus financiamentos', icon: 'briefcase-outline', color: '#64748B', isMaterial: false },
+  { title: 'Minhas Propostas', subtitle: 'Acompanhe suas solicitações', icon: 'file-document-outline', color: '#8B5CF6', isMaterial: false, route: '/(propostas)/' },
+  { title: 'Meus Contratos', subtitle: 'Gerencie seus financiamentos', icon: 'briefcase-outline', color: '#64748B', isMaterial: false, route: '/(credito)/meus-contratos' },
 ];
 
 export default function CreditNavigationMenu() {
+  const router = useRouter();
+
   return (
     <View className="bg-white rounded-2xl px-4 py-2 shadow-sm border border-gray-100">
       {MENU_ITEMS.map((item, index) => (
         <TouchableOpacity 
           key={item.title}
+          onPress={() => item.route && router.push(item.route as any)}
+          activeOpacity={item.route ? 0.7 : 1}
           className={`flex-row items-center justify-between py-4 ${
             index !== MENU_ITEMS.length - 1 ? 'border-b border-gray-100' : ''
           }`}

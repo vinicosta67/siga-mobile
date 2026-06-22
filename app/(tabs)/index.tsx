@@ -14,11 +14,13 @@ import ContractCard from '@/src/components/ContractCard';
 import CreditSolutionsList from '@/src/components/CreditSolutionsList';
 import HelpCenter from '@/src/components/HelpCenter';
 import FeedbackCard from '@/src/components/FeedbackCard';
+import { useRouter } from 'expo-router';
 import SectionTitle from '@/src/components/SectionTitle';
 
 export default function Home() {
   const [isVisible, setIsVisible] = useState(true);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const handleToggleVisibility = () => setIsVisible(!isVisible);
 
@@ -52,7 +54,7 @@ export default function Home() {
           <View className="mt-6 mb-4">
             <PreApprovedCard 
               count={3} 
-              onPress={() => console.log('Pre approved')} 
+              onPress={() => router.push('/(credito)/pre-aprovado')} 
             />
           </View>
 
@@ -62,7 +64,7 @@ export default function Home() {
               title="FNO-CAR" 
               id="#SIGA-2026-001847" 
               progress={58} 
-              onPress={() => console.log('Proposta')} 
+              onPress={() => router.push('/(propostas)/' as any)} 
             />
           </View>
 
