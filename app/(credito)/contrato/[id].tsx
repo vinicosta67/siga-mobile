@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -19,6 +19,13 @@ const tabs: TabOption[] = [
   { id: 'cadastros', label: 'Cadastros' },
 ];
 
+const MOCK_NFS = [
+  { id: '1', numero: 'NF-001234', fornecedor: 'Agro Insumos Norte LTDA', valor: 85000.0, data: '15/04/2025', descricao: 'Sementes de soja certificadas — safra 2025/26', status: 'aceita' },
+  { id: '2', numero: 'NF-001235', fornecedor: 'Maquinário Amazônia S/A', valor: 320000.0, data: '22/04/2025', descricao: 'Trator John Deere 7515 — implemento', status: 'aceita' },
+  { id: '3', numero: 'NF-001289', fornecedor: 'Fertilizantes Belém', valor: 45000.0, data: '10/05/2025', descricao: 'Adubo NPK 20-05-20 — 50 toneladas', status: 'em_analise' },
+  { id: '4', numero: 'NF-001301', fornecedor: 'Posto Combustível Rio', valor: 12000.0, data: '28/05/2025', descricao: 'Diesel S10 para plantio', status: 'pendente' },
+];
+
 export default function ContratoDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -28,6 +35,8 @@ export default function ContratoDetailScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'fornecedor' | 'comprador'>('fornecedor');
   const [actionModal, setActionModal] = useState<'pagar' | 'boleto' | 'debito' | null>(null);
+  const [nfModalVisible, setNfModalVisible] = useState(false);
+  const [anteciparModalVisible, setAnteciparModalVisible] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
   // Na vida real, faria um fetch pelo ID. Aqui usamos o mock ativo.
@@ -304,23 +313,180 @@ export default function ContratoDetailScreen() {
         );
       
       case 'nf':
+        const totalComprovado = MOCK_NFS.filter(n => n.status === 'aceita').reduce((sum, n) => sum + n.valor, 0);
+        const totalExigido = contrato.valorContratado * 0.8;
+        const pctComprovado = totalExigido > 0 ? Math.min((totalComprovado / totalExigido) * 100, 100) : 0;
+        const isComprovadoOk = pctComprovado >= 80;
+
         return (
-          <View className="px-4 mt-10 items-center opacity-50">
-            <MaterialIcons name="receipt" size={60} color="#9CA3AF" />
-            <Text className="text-[16px] font-bold text-gray-600 mt-4">Nenhuma Nota Fiscal</Text>
-            <Text className="text-[13px] text-gray-400 text-center mt-2">Você ainda não enviou os comprovantes de insumos desta safra.</Text>
-            <TouchableOpacity className="mt-6 bg-brand-dark px-6 py-3 rounded-xl">
-              <Text className="text-white font-bold">Enviar Nota Fiscal</Text>
-            </TouchableOpacity>
+          <View className="px-4 mt-4">
+            {/* Resumo Comprovação */}
+            <View className={`p-4 rounded-xl border mb-4 ${isComprovadoOk ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+              <View className="flex-row items-center mb-2">
+                <MaterialIcons name={isComprovadoOk ? "check-circle" : "schedule"} size={20} color={isComprovadoOk ? "#16A34A" : "#D97706"} />
+                <Text className={`font-bold flex-1 ml-2 ${isComprovadoOk ? 'text-green-700' : 'text-yellow-700'}`} style={{ fontSize: 14 }}>Comprovação de aplicação</Text>
+                <Text className={`font-bold ${isComprovadoOk ? 'text-green-700' : 'text-yellow-700'}`} style={{ fontSize: 16 }}>{pctComprovado.toFixed(0)}%</Text>
+              </View>
+              
+              <View className="h-2 w-full bg-gray-200 rounded-full mb-2 overflow-hidden">
+                <View style={{ height: '100%', borderRadius: 9999, width: `${pctComprovado}%`, backgroundColor: isComprovadoOk ? '#16A34A' : '#F59E0B' }} />
+              </View>
+
+              <View className="flex-row justify-between">
+                <Text className="text-[11px] text-gray-500">Comprovado: R$ {totalComprovado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
+                <Text className="text-[11px] text-gray-500">Exigido: R$ {totalExigido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
+              </View>
+            </View>
+
+            {/* Info MCR */}
+            <View className="bg-blue-50 p-3 rounded-xl flex-row items-start mb-6">
+              <MaterialIcons name="gavel" size={16} color="#2563EB" />
+              <Text className="flex-1 ml-2 text-[11px] text-blue-700 leading-relaxed">
+                MCR 2-6-9: Comprovação de aplicação dos recursos é obrigatória.{'\n'}
+                Prazo: até 60 dias após cada liberação.{'\n'}
+                Penalidade: desvio de finalidade pode gerar vencimento antecipado.
+              </Text>
+            </View>
+
+            {/* Header NFs */}
+            <View className="flex-row justify-between items-center mb-3">
+              <Text className="font-bold text-[16px] text-gray-800">Notas fiscais enviadas</Text>
+              <TouchableOpacity 
+                className="bg-[#0A3D24] px-3 py-1.5 rounded-full flex-row items-center"
+                activeOpacity={0.8}
+                onPress={() => setNfModalVisible(true)}
+              >
+                <MaterialIcons name="add" size={14} color="#FFFFFF" />
+                <Text className="text-white font-bold text-[11px] ml-1">Nova NF</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Lista de NFs */}
+            {MOCK_NFS.map(nf => (
+              <View key={nf.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-3">
+                <View className="flex-row justify-between items-start mb-2">
+                  <View className="flex-row items-center flex-1">
+                    <MaterialIcons name="receipt" size={16} color="#9CA3AF" />
+                    <Text className="font-bold text-[14px] text-gray-800 ml-2">{nf.numero}</Text>
+                  </View>
+                  <View className={`px-2 py-1 rounded-md ${nf.status === 'aceita' ? 'bg-green-100' : nf.status === 'pendente' ? 'bg-red-100' : 'bg-yellow-100'}`}>
+                    <Text className={`font-bold uppercase ${nf.status === 'aceita' ? 'text-green-700' : nf.status === 'pendente' ? 'text-red-700' : 'text-yellow-700'}`} style={{ fontSize: 10 }}>
+                      {nf.status.replace('_', ' ')}
+                    </Text>
+                  </View>
+                </View>
+                
+                <Text className="text-[13px] font-bold text-gray-800 mb-0.5">{nf.fornecedor}</Text>
+                <Text className="text-[12px] text-gray-500 mb-3">{nf.descricao}</Text>
+                
+                <View className="flex-row justify-between items-center border-t border-gray-100 pt-3">
+                  <Text className="text-[12px] text-gray-400">Enviada em {nf.data}</Text>
+                  <Text className="font-bold text-[14px] text-brand-dark">
+                    R$ {nf.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </Text>
+                </View>
+              </View>
+            ))}
+            <View className="h-6" />
           </View>
         );
 
       case 'aging':
+        let emDia = 0, ate30 = 0, ate60 = 0, ate90 = 0, mais90 = 0;
+        const now = new Date();
+        contrato.parcelas.forEach(p => {
+          const diffTime = now.getTime() - p.vencimento.getTime();
+          const dias = diffTime > 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : 0;
+          
+          if (p.status === 'agendada' || dias <= 0) {
+            emDia++;
+          } else {
+            if (dias <= 30) ate30++;
+            else if (dias <= 60) ate60++;
+            else if (dias <= 90) ate90++;
+            else mais90++;
+          }
+        });
+
+        const agingData = [
+          { label: 'Em dia', count: emDia, color: '#16A34A' },
+          { label: '1-30 dias', count: ate30, color: '#F59E0B' },
+          { label: '31-60 dias', count: ate60, color: '#F97316' },
+          { label: '61-90 dias', count: ate90, color: '#DC2626' },
+          { label: '> 90 dias', count: mais90, color: '#991B1B' },
+        ];
+
         return (
-          <View className="px-4 mt-10 items-center opacity-50">
-            <MaterialIcons name="insert-chart-outlined" size={60} color="#9CA3AF" />
-            <Text className="text-[16px] font-bold text-gray-600 mt-4">Relatório Aging</Text>
-            <Text className="text-[13px] text-gray-400 text-center mt-2">O seu histórico de pagamentos e análise de envelhecimento da dívida será gerado após o fechamento do semestre.</Text>
+          <View className="px-4 mt-4">
+            {/* Status Geral */}
+            <View className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
+              <View className="flex-row items-center mb-4">
+                <MaterialIcons name="analytics" size={20} color="#374151" />
+                <Text className="font-bold text-[15px] text-gray-800 ml-2">Aging de parcelas</Text>
+              </View>
+
+              {agingData.map((item, index) => {
+                const pct = contrato.totalParcelas > 0 ? (item.count / contrato.totalParcelas) * 100 : 0;
+                const isLast = index === agingData.length - 1;
+                return (
+                  <View key={index} className={isLast ? "mb-0" : "mb-3"}>
+                    <View className="flex-row justify-between mb-1">
+                      <Text className="text-[13px] font-bold" style={{ color: item.color }}>{item.label}</Text>
+                      <Text className="text-[12px] text-gray-500">{item.count} parcela(s) — {pct.toFixed(0)}%</Text>
+                    </View>
+                    <View className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                      <View style={{ height: '100%', borderRadius: 9999, width: `${pct}%`, backgroundColor: item.color }} />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Classificação Risco */}
+            <View className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
+              <Text className="font-bold text-[15px] text-gray-800 mb-4">Classificação de risco (Res. 2.682)</Text>
+              
+              <RiskRow level="AA" dias="0 dias" prov="0%" colorClass="text-green-700" bgClass="bg-green-100" borderClass="border-green-300" isActive={contrato.parcelasEmAtraso === 0} />
+              <RiskRow level="A" dias="1-14 dias" prov="0,5%" colorClass="text-green-700" bgClass="bg-green-100" borderClass="border-green-300" isActive={false} />
+              <RiskRow level="B" dias="15-30 dias" prov="1%" colorClass="text-yellow-700" bgClass="bg-yellow-100" borderClass="border-yellow-300" isActive={false} />
+              <RiskRow level="C" dias="31-60 dias" prov="3%" colorClass="text-yellow-700" bgClass="bg-yellow-100" borderClass="border-yellow-300" isActive={false} />
+              <RiskRow level="D" dias="61-90 dias" prov="10%" colorClass="text-orange-700" bgClass="bg-orange-100" borderClass="border-orange-300" isActive={false} />
+              <RiskRow level="E" dias="91-120 dias" prov="30%" colorClass="text-red-700" bgClass="bg-red-100" borderClass="border-red-300" isActive={false} />
+              <RiskRow level="F" dias="121-150 dias" prov="50%" colorClass="text-red-700" bgClass="bg-red-100" borderClass="border-red-300" isActive={false} />
+              <RiskRow level="G" dias="151-180 dias" prov="70%" colorClass="text-red-900" bgClass="bg-red-200" borderClass="border-red-400" isActive={false} />
+              <RiskRow level="H" dias="> 180 dias" prov="100%" colorClass="text-red-900" bgClass="bg-red-200" borderClass="border-red-400" isActive={false} />
+              
+              <Text className="text-[10px] text-gray-400 italic mt-2">
+                Provisionamento mínimo conforme BACEN para cada faixa de atraso.
+              </Text>
+            </View>
+
+            {/* Ações de Recuperação */}
+            <View className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
+              <Text className="font-bold text-[15px] text-gray-800 mb-3">Ações de recuperação</Text>
+              
+              <ActionTile 
+                icon="phone" 
+                title="Contatar gerente de conta" 
+                desc="Negocie condições especiais" 
+                onPress={() => Alert.alert('Aviso', 'Contatando gerente...')} 
+                isLast={false}
+              />
+              <ActionTile 
+                icon="handshake" 
+                title="Solicitar renegociação" 
+                desc="Reestruturação de parcelas" 
+                onPress={() => Alert.alert('Sucesso', 'Solicitação enviada!')} 
+                isLast={false}
+              />
+              <ActionTile 
+                icon="calculate" 
+                title="Simular antecipação" 
+                desc="Desconto para quitação antecipada" 
+                onPress={() => setAnteciparModalVisible(true)} 
+                isLast={true}
+              />
+            </View>
           </View>
         );
 
@@ -535,6 +701,132 @@ export default function ContratoDetailScreen() {
         </View>
       </Modal>
 
+      {/* Modal Nova Nota Fiscal */}
+      <Modal visible={nfModalVisible} animationType="slide" transparent>
+        <View className="flex-1 bg-black/50 justify-end">
+          <View 
+            className="bg-white rounded-t-3xl p-6" 
+            style={{ paddingBottom: insets.bottom + 24 }}
+          >
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-[18px] font-bold text-gray-800">Enviar Nota Fiscal</Text>
+              <TouchableOpacity onPress={() => setNfModalVisible(false)}>
+                <MaterialIcons name="close" size={24} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+
+            <View className="mb-4">
+              <Text className="text-[12px] font-bold text-gray-500 mb-2 uppercase">Número da NF</Text>
+              <TextInput 
+                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[15px] text-gray-800"
+                placeholder="Ex: NF-001234"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            <View className="mb-4">
+              <Text className="text-[12px] font-bold text-gray-500 mb-2 uppercase">Fornecedor / Razão Social</Text>
+              <TextInput 
+                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[15px] text-gray-800"
+                placeholder="Digite o fornecedor"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            <View className="mb-4">
+              <Text className="text-[12px] font-bold text-gray-500 mb-2 uppercase">Valor (R$)</Text>
+              <TextInput 
+                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[15px] text-gray-800"
+                placeholder="0,00"
+                keyboardType="numeric"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            <View className="mb-8">
+              <Text className="text-[12px] font-bold text-gray-500 mb-2 uppercase">Descrição do Gasto</Text>
+              <TextInput 
+                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[15px] text-gray-800"
+                placeholder="Insumos, equipamentos..."
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            <View className="flex-row gap-4">
+              <TouchableOpacity 
+                className="flex-1 py-4 border border-brand-green rounded-xl items-center"
+                activeOpacity={0.8}
+                onPress={() => alert('Anexar arquivo...')}
+              >
+                <Text className="text-brand-green font-bold text-[15px]">Anexar PDF</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                className="flex-1 py-4 bg-brand-green rounded-xl items-center"
+                activeOpacity={0.8}
+                onPress={() => {
+                  setNfModalVisible(false);
+                  alert('Nota fiscal enviada para análise!');
+                }}
+              >
+                <Text className="text-white font-bold text-[15px]">Enviar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Antecipação / Quitação */}
+      <Modal visible={anteciparModalVisible} animationType="slide" transparent>
+        <View className="flex-1 bg-black/50 justify-end">
+          <View 
+            className="bg-white rounded-t-3xl p-6 items-center" 
+            style={{ paddingBottom: insets.bottom + 24 }}
+          >
+            <TouchableOpacity 
+              className="absolute top-4 right-4 p-2"
+              onPress={() => setAnteciparModalVisible(false)}
+            >
+              <MaterialIcons name="close" size={24} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            <MaterialIcons name="calculate" size={40} color="#0A3D24" className="mb-2" />
+            <Text className="text-[18px] font-bold text-gray-800 mb-6">Antecipação / Quitação</Text>
+
+            <View className="w-full mb-6">
+              <View className="flex-row justify-between mb-3">
+                <Text className="text-[14px] text-gray-500">Saldo devedor atual</Text>
+                <Text className="text-[14px] font-bold text-gray-800">
+                  R$ {contrato.saldoDevedor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </Text>
+              </View>
+              <View className="flex-row justify-between mb-4 pb-4 border-b border-gray-100">
+                <Text className="text-[14px] text-gray-500">Desconto quitação (5%)</Text>
+                <Text className="text-[14px] font-bold text-green-600">
+                  - R$ {(contrato.saldoDevedor * 0.05).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </Text>
+              </View>
+              <View className="flex-row justify-between">
+                <Text className="text-[15px] font-bold text-gray-800">Valor para quitação</Text>
+                <Text className="text-[16px] font-bold text-brand-dark">
+                  R$ {(contrato.saldoDevedor * 0.95).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              className="bg-brand-green py-4 rounded-xl items-center w-full"
+              activeOpacity={0.8}
+              onPress={() => {
+                setAnteciparModalVisible(false);
+                alert('Solicitação de quitação enviada ao gerente!');
+              }}
+            >
+              <Text className="text-white font-bold text-[15px]">Solicitar Quitação</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -601,5 +893,43 @@ function ProgressoIndiceBar({ data, valor, isEvi = false }: { data: string, valo
       </View>
       <Text className="w-10 text-right text-[12px] font-bold" style={{ color }}>{valor.toFixed(2)}</Text>
     </View>
+  );
+}
+
+function RiskRow({ level, dias, prov, colorClass, bgClass, borderClass, isActive }: { level: string, dias: string, prov: string, colorClass: string, bgClass: string, borderClass: string, isActive: boolean }) {
+  return (
+    <View 
+      className={`flex-row items-center py-2 px-3 rounded-lg mb-1 ${isActive ? `${bgClass} border ${borderClass}` : 'bg-transparent border-0'}`} 
+    >
+      <View className={`w-6 h-6 rounded items-center justify-center mr-3 ${bgClass}`}>
+        <Text className={`font-bold ${colorClass}`} style={{ fontSize: 10 }}>{level}</Text>
+      </View>
+      <Text className="flex-1 text-[13px] text-gray-500">{dias}</Text>
+      <Text className="text-[12px] font-bold text-gray-700">Provisão: {prov}</Text>
+      {isActive && (
+        <View className={`ml-3 px-2 py-0.5 rounded ${bgClass}`}>
+          <Text className={`font-bold ${colorClass} uppercase`} style={{ fontSize: 9 }}>Atual</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function ActionTile({ icon, title, desc, onPress, isLast }: { icon: any, title: string, desc: string, onPress: () => void, isLast?: boolean }) {
+  return (
+    <TouchableOpacity 
+      activeOpacity={0.7} 
+      className={isLast ? 'flex-row items-center py-3' : 'flex-row items-center py-3 border-b border-gray-100'}
+      onPress={onPress}
+    >
+      <View className="w-10 h-10 rounded-xl bg-gray-50 items-center justify-center mr-3">
+        <MaterialIcons name={icon} size={20} color="#374151" />
+      </View>
+      <View className="flex-1">
+        <Text className="text-[14px] font-bold text-gray-800">{title}</Text>
+        <Text className="text-[12px] text-gray-500">{desc}</Text>
+      </View>
+      <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
+    </TouchableOpacity>
   );
 }

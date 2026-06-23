@@ -19,7 +19,7 @@ export default function CreditDashboardBanner({ onSimulatePress, isVisible = tru
         {isVisible ? 'R$ 850.000,00' : '••••••••'}
       </Text>
       
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-4">
         <TouchableOpacity className="bg-white/10 border border-white/20 py-2 px-3 rounded-full flex-row items-center mr-2">
           <MaterialIcons name="star" size={16} color="#00E65B" />
           <Text className="text-white font-bold ml-1 text-xs">Oportunidades</Text>
@@ -31,8 +31,6 @@ export default function CreditDashboardBanner({ onSimulatePress, isVisible = tru
         </TouchableOpacity>
 
         <TouchableOpacity 
-          testID="simulate-button"
-          onPress={onSimulatePress}
           className="bg-white/10 border border-white/20 py-2 px-3 rounded-full flex-row items-center mr-2"
         >
           <MaterialIcons name="calculate" size={16} color="#00E65B" />
@@ -44,6 +42,15 @@ export default function CreditDashboardBanner({ onSimulatePress, isVisible = tru
           <Text className="text-white font-bold ml-1 text-xs">Propostas</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <TouchableOpacity 
+        testID="simulate-button"
+        onPress={onSimulatePress}
+        className="bg-[#00E65B] py-3 rounded-xl flex-row justify-center items-center"
+      >
+        <MaterialIcons name="calculate" size={20} color="#0A3D24" />
+        <Text className="text-[#0A3D24] font-bold ml-2">Simular agora</Text>
+      </TouchableOpacity>
     </View>
   );
 }

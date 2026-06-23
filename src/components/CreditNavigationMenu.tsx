@@ -16,7 +16,7 @@ interface MenuItemProps {
 const MENU_ITEMS: MenuItemProps[] = [
   { title: 'Oportunidades', subtitle: 'Novas linhas de crédito', icon: 'star-circle-outline', color: '#F59E0B', isMaterial: false, route: '/(credito)/oportunidades' },
   { title: 'Crédito Pré-Aprovado', subtitle: '3 ofertas disponíveis', icon: 'check-circle-outline', color: '#18A354', isMaterial: false, route: '/(credito)/pre-aprovado' },
-  { title: 'Simular Crédito', subtitle: 'Faça uma simulação agora', icon: 'calculate', color: '#3B82F6', isMaterial: true },
+  { title: 'Simular Crédito', subtitle: 'Faça uma simulação agora', icon: 'calculate', color: '#3B82F6', isMaterial: true, route: '/(credito)/simulador/necessidade' },
   { title: 'Minhas Propostas', subtitle: 'Acompanhe suas solicitações', icon: 'file-document-outline', color: '#8B5CF6', isMaterial: false, route: '/(propostas)/' },
   { title: 'Meus Contratos', subtitle: 'Gerencie seus financiamentos', icon: 'briefcase-outline', color: '#64748B', isMaterial: false, route: '/(credito)/meus-contratos' },
 ];
