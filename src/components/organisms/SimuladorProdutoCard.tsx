@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { ProdutoCredito } from '../../utils/creditoMockData';
+import { VitrineProduto } from '../../hooks/queries/useSimulador';
 
 interface SimuladorProdutoCardProps {
-  produto: ProdutoCredito;
+  produto: VitrineProduto;
   isSelected: boolean;
   onSelect: (id: string) => void;
 }
@@ -14,11 +14,12 @@ export default function SimuladorProdutoCard({
   isSelected,
   onSelect,
 }: SimuladorProdutoCardProps) {
-  // Map logic for icon (same as the existing ProdutoCreditoCard)
+  // Map logic for icon
   const getStyleMap = (id: string) => {
-    if (id.includes('car')) return { icon: 'agriculture' };
-    if (id.includes('inv')) return { icon: 'precision-manufacturing' };
-    if (id.includes('flo')) return { icon: 'eco' };
+    const idLower = id.toLowerCase();
+    if (idLower.includes('car')) return { icon: 'agriculture' };
+    if (idLower.includes('inv')) return { icon: 'precision-manufacturing' };
+    if (idLower.includes('flo')) return { icon: 'eco' };
     return { icon: 'business-center' };
   };
 
@@ -45,28 +46,28 @@ export default function SimuladorProdutoCard({
         <View className="mb-3">
           <Text className="text-[13px] text-gray-500 mb-0.5">CET estimado</Text>
           <Text className="text-[16px] font-bold text-gray-800">
-            {produto.cetEstimado.toFixed(2)}% a.a.
+            {produto.cet_estimado_aa?.toFixed(2)}% a.a.
           </Text>
         </View>
 
         <View className="mb-3">
-          <Text className="text-[13px] text-gray-500 mb-0.5">Prazo maximo</Text>
+          <Text className="text-[13px] text-gray-500 mb-0.5">Prazo máximo</Text>
           <Text className="text-[16px] font-bold text-gray-800">
-            {produto.prazoMaxMeses} meses
+            {produto.prazo_max_meses} meses
           </Text>
         </View>
 
         <View className="mb-3">
-          <Text className="text-[13px] text-gray-500 mb-0.5">Valor minimo</Text>
+          <Text className="text-[13px] text-gray-500 mb-0.5">Valor mínimo</Text>
           <Text className="text-[16px] font-bold text-gray-800">
-            R$ {produto.valorMinimo >= 1000 ? `${produto.valorMinimo / 1000}k` : produto.valorMinimo}
+            R$ {produto.limite_min >= 1000 ? `${produto.limite_min / 1000}k` : produto.limite_min}
           </Text>
         </View>
 
         <View className="mb-3">
-          <Text className="text-[13px] text-gray-500 mb-0.5">Valor maximo</Text>
+          <Text className="text-[13px] text-gray-500 mb-0.5">Valor máximo</Text>
           <Text className="text-[16px] font-bold text-gray-800">
-            R$ {produto.valorMaximo >= 1000000 ? `${produto.valorMaximo / 1000000}M` : `${produto.valorMaximo / 1000}k`}
+            R$ {produto.limite_max >= 1000000 ? `${produto.limite_max / 1000000}M` : `${produto.limite_max / 1000}k`}
           </Text>
         </View>
       </View>

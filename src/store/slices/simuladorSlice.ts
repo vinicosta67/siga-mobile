@@ -4,11 +4,12 @@ export interface SimuladorState {
   step: number;
   necessidade: string | null;
   perfil: string | null;
+  uf: string | null;
   produtoSelecionadoId: string | null;
-  
+
   // Etapa 3
   valorDesejado: number;
-  
+
   // Etapa 4
   prazoMeses: number;
   carenciaMeses: number;
@@ -18,19 +19,25 @@ export interface SimuladorState {
   areaHectares: number;
   carNumero: string | null;
   cnpjMei: string | null;
-  
+
   // Etapa 5
-  garantiaSelecionada: string | null;
+  garantiasSelecionadas: {
+    id: string;
+    tipo: string;
+    descricao: string;
+    valor: number;
+  }[];
 }
 
 const initialState: SimuladorState = {
   step: 1,
   necessidade: null,
   perfil: null,
+  uf: null,
   produtoSelecionadoId: null,
-  
+
   valorDesejado: 0,
-  
+
   prazoMeses: 24,
   carenciaMeses: 6,
   sistemaAmortizacao: 'PRICE',
@@ -39,8 +46,8 @@ const initialState: SimuladorState = {
   areaHectares: 0,
   carNumero: null,
   cnpjMei: null,
-  
-  garantiaSelecionada: null,
+
+  garantiasSelecionadas: [],
 };
 
 const simuladorSlice = createSlice({
@@ -53,8 +60,12 @@ const simuladorSlice = createSlice({
     setPerfil: (state, action: PayloadAction<string | null>) => {
       state.perfil = action.payload;
     },
+    setUf: (state, action: PayloadAction<string | null>) => {
+      state.uf = action.payload;
+    },
     setProduto: (state, action: PayloadAction<string>) => {
       state.produtoSelecionadoId = action.payload;
+      state.garantiasSelecionadas = [];
     },
     setValorDesejado: (state, action: PayloadAction<number>) => {
       state.valorDesejado = action.payload;
@@ -83,8 +94,14 @@ const simuladorSlice = createSlice({
     setCnpjMei: (state, action: PayloadAction<string | null>) => {
       state.cnpjMei = action.payload;
     },
-    setGarantiaSelecionada: (state, action: PayloadAction<string | null>) => {
-      state.garantiaSelecionada = action.payload;
+    addGarantia: (state, action: PayloadAction<{ tipo: string; descricao: string; valor: number }>) => {
+      state.garantiasSelecionadas.push({
+        id: Math.random().toString(36).substr(2, 9),
+        ...action.payload
+      });
+    },
+    removeGarantia: (state, action: PayloadAction<string>) => {
+      state.garantiasSelecionadas = state.garantiasSelecionadas.filter(g => g.id !== action.payload);
     },
     nextStep: (state) => {
       state.step += 1;
@@ -101,6 +118,7 @@ const simuladorSlice = createSlice({
 export const {
   setNecessidade,
   setPerfil,
+  setUf,
   setProduto,
   setValorDesejado,
   setPrazoMeses,
@@ -111,7 +129,8 @@ export const {
   setAreaHectares,
   setCarNumero,
   setCnpjMei,
-  setGarantiaSelecionada,
+  addGarantia,
+  removeGarantia,
   nextStep,
   prevStep,
   resetSimulador,

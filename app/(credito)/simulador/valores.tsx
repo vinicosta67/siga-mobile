@@ -1,13 +1,13 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import BASASlider from '../../../src/components/atoms/BASASlider';
 import SimuladorStepperHeader from '../../../src/components/organisms/SimuladorStepperHeader';
 import { RootState } from '../../../src/store';
 import { nextStep, prevStep, setValorDesejado } from '../../../src/store/slices/simuladorSlice';
-import { CreditoMockData } from '../../../src/utils/creditoMockData';
+import { useProdutoDetalhes } from '../../../src/hooks/queries/useSimulador';
 
 const formatCurrencyInput = (value: string) => {
   const numericValue = value.replace(/[^0-9]/g, '');
@@ -31,19 +31,21 @@ export default function ValoresScreen() {
   const router = useRouter();
   const { step, produtoSelecionadoId, valorDesejado } = useSelector((state: RootState) => state.simulador);
 
-  const produto = CreditoMockData.produtos.find(p => p.id === produtoSelecionadoId) || CreditoMockData.produtos[0];
+  const { data, isLoading, isError } = useProdutoDetalhes(produtoSelecionadoId);
 
   const [inputValue, setInputValue] = useState('');
 
   useEffect(() => {
-    if (valorDesejado > 0) {
-      setInputValue(formatCurrencyDisplay(valorDesejado).replace('R$', '').trim());
-    } else {
-      const defaultVal = produto.valorMinimo;
-      dispatch(setValorDesejado(defaultVal));
-      setInputValue(formatCurrencyDisplay(defaultVal).replace('R$', '').trim());
+    if (data?.regras_simulacao) {
+      if (valorDesejado > 0) {
+        setInputValue(formatCurrencyDisplay(valorDesejado).replace('R$', '').trim());
+      } else {
+        const defaultVal = data.regras_simulacao.valor_min;
+        dispatch(setValorDesejado(defaultVal));
+        setInputValue(formatCurrencyDisplay(defaultVal).replace('R$', '').trim());
+      }
     }
-  }, []);
+  }, [data?.regras_simulacao]);
 
   const handleInputChange = (text: string) => {
     const formatted = formatCurrencyInput(text);
@@ -69,20 +71,21 @@ export default function ValoresScreen() {
   };
 
   const handleContinue = () => {
-    // Clamp before advancing
+    if (!data?.regras_simulacao) return;
+
     let finalValue = valorDesejado;
-    if (finalValue < produto.valorMinimo) finalValue = produto.valorMinimo;
-    if (finalValue > produto.valorMaximo) finalValue = produto.valorMaximo;
+    if (finalValue < data.regras_simulacao.valor_min) finalValue = data.regras_simulacao.valor_min;
+    if (finalValue > data.regras_simulacao.valor_max) finalValue = data.regras_simulacao.valor_max;
 
     dispatch(setValorDesejado(finalValue));
     dispatch(nextStep());
     router.push('/(credito)/simulador/condicoes');
   };
 
-  // Generate quick values based on product limits
   const generateQuickValues = () => {
-    const min = produto.valorMinimo;
-    const max = produto.valorMaximo;
+    if (!data?.regras_simulacao) return [];
+    const min = data.regras_simulacao.valor_min;
+    const max = data.regras_simulacao.valor_max;
 
     if (max <= 50000) return [1000, 5000, 10000, 15000, 30000].filter(v => v >= min && v <= max);
     if (max <= 500000) return [10000, 50000, 100000, 250000, 500000].filter(v => v >= min && v <= max);
@@ -91,13 +94,18 @@ export default function ValoresScreen() {
 
   const quickValues = generateQuickValues();
 
-  // Get mapped icon based on product logic
-  const getIcon = (id: string) => {
-    if (id.includes('car')) return 'agriculture';
-    if (id.includes('inv')) return 'precision-manufacturing';
-    if (id.includes('flo')) return 'eco';
+  const getIcon = (id: string | null) => {
+    if (!id) return 'business-center';
+    const idLower = id.toLowerCase();
+    if (idLower.includes('car')) return 'agriculture';
+    if (idLower.includes('inv')) return 'precision-manufacturing';
+    if (idLower.includes('flo')) return 'eco';
     return 'business-center';
   };
+
+  // Warning de Garantias
+  const mostrarAvisoGarantia = data?.garantias_exigidas?.garantia_valor_minimo_obrigatorio !== null && 
+                               valorDesejado >= (data?.garantias_exigidas?.garantia_valor_minimo_obrigatorio || 0);
 
   return (
     <View className="flex-1 bg-white">
@@ -105,65 +113,94 @@ export default function ValoresScreen() {
 
       <ScrollView className="flex-1 px-4 pt-6" showsVerticalScrollIndicator={false}>
         <Text className="text-[32px] font-bold text-gray-900 mb-6 leading-tight">
-          Quanto voce{'\n'}precisa?
+          Quanto você{'\n'}precisa?
         </Text>
 
         {/* Selected Product Pill */}
         <View className="bg-[#E8F3EB] self-start px-3 py-2 rounded-lg flex-row items-center mb-8">
-          <MaterialIcons name={getIcon(produto.id) as any} size={16} color="#0A3D24" />
-          <Text className="ml-2 text-[#0A3D24] font-bold text-[13px]">{produto.nome}</Text>
+          <MaterialIcons name={getIcon(produtoSelecionadoId) as any} size={16} color="#0A3D24" />
+          <Text className="ml-2 text-[#0A3D24] font-bold text-[13px]">Produto Selecionado</Text>
         </View>
 
-        {/* Value Input */}
-        <View className="mb-2 border-b border-gray-300 pb-2">
-          <Text className="text-[14px] text-gray-500 mb-1">Valor desejado</Text>
-          <View className="flex-row items-center">
-            <Text className="text-[20px] font-bold text-gray-400 mr-2">R$</Text>
-            <TextInput
-              className="flex-1 text-[24px] font-bold text-gray-900"
-              keyboardType="numeric"
-              value={inputValue}
-              onChangeText={handleInputChange}
-              placeholderTextColor="#9CA3AF"
-            />
+        {isLoading ? (
+          <View className="items-center py-12">
+            <ActivityIndicator size="large" color="#0A3D24" />
+            <Text className="text-gray-500 mt-4">Carregando limites do produto...</Text>
           </View>
-        </View>
+        ) : isError || !data ? (
+          <View className="items-center py-12">
+            <MaterialIcons name="error-outline" size={48} color="#EF4444" />
+            <Text className="text-red-500 text-center mt-4">Erro ao carregar detalhes do produto.</Text>
+          </View>
+        ) : (
+          <>
+            {/* Value Input */}
+            <View className="mb-2 border-b border-gray-300 pb-2">
+              <Text className="text-[14px] text-gray-500 mb-1">Valor desejado</Text>
+              <View className="flex-row items-center">
+                <Text className="text-[20px] font-bold text-gray-400 mr-2">R$</Text>
+                <TextInput
+                  className="flex-1 text-[24px] font-bold text-gray-900"
+                  keyboardType="numeric"
+                  value={inputValue}
+                  onChangeText={handleInputChange}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
 
-        {/* Min/Max Limits */}
-        <View className="flex-row justify-between mb-8">
-          <Text className="text-[12px] text-gray-400">Min: {formatCurrencyDisplay(produto.valorMinimo)}</Text>
-          <Text className="text-[12px] text-gray-400">Max: {formatCurrencyDisplay(produto.valorMaximo)}</Text>
-        </View>
+            {/* Min/Max Limits */}
+            <View className="flex-row justify-between mb-8">
+              <Text className="text-[12px] text-gray-400">Min: {formatCurrencyDisplay(data.regras_simulacao.valor_min)}</Text>
+              <Text className="text-[12px] text-gray-400">Max: {formatCurrencyDisplay(data.regras_simulacao.valor_max)}</Text>
+            </View>
 
-        {/* Slider */}
-        <BASASlider
-          min={produto.valorMinimo}
-          max={produto.valorMaximo}
-          value={valorDesejado}
-          onValueChange={handleSliderChange}
-        />
+            {/* Slider */}
+            <BASASlider
+              min={data.regras_simulacao.valor_min}
+              max={data.regras_simulacao.valor_max}
+              value={valorDesejado}
+              onValueChange={handleSliderChange}
+            />
 
-        {/* Quick Values */}
-        <View className="flex-row flex-wrap gap-2 mt-6">
-          {quickValues.map((val) => {
-            const isSelected = valorDesejado === val;
-            return (
-              <TouchableOpacity
-                key={val}
-                onPress={() => setQuickValue(val)}
-                className={`px-4 py-2 rounded-full border ${isSelected ? 'bg-[#0A3D24] border-[#0A3D24]' : 'bg-white border-gray-300'
-                  }`}
-              >
-                <Text
-                  className={`font-bold text-[13px] ${isSelected ? 'text-white' : 'text-gray-500'
-                    }`}
-                >
-                  {formatCurrencyDisplay(val).replace(',00', '')}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+            {/* Quick Values */}
+            <View className="flex-row flex-wrap gap-2 mt-6">
+              {quickValues.map((val) => {
+                const isSelected = valorDesejado === val;
+                return (
+                  <TouchableOpacity
+                    key={val}
+                    onPress={() => setQuickValue(val)}
+                    className={`px-4 py-2 rounded-full border ${isSelected ? 'bg-[#0A3D24] border-[#0A3D24]' : 'bg-white border-gray-300'
+                      }`}
+                  >
+                    <Text
+                      className={`font-bold text-[13px] ${isSelected ? 'text-white' : 'text-gray-500'
+                        }`}
+                    >
+                      {formatCurrencyDisplay(val).replace(',00', '')}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Aviso de Garantia Condicional */}
+            {mostrarAvisoGarantia && (
+              <View className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 mt-6 flex-row items-start">
+                <MaterialIcons name="info-outline" size={20} color="#D97706" />
+                <View className="ml-2 flex-1">
+                  <Text className="text-yellow-800 font-bold text-[13px] mb-1">
+                    Exigência de Garantia Real
+                  </Text>
+                  <Text className="text-yellow-700 text-[12px] leading-relaxed">
+                    Valores a partir de {formatCurrencyDisplay(data.garantias_exigidas.garantia_valor_minimo_obrigatorio || 0)} exigem a apresentação de bens como garantia ({data.garantias_exigidas.tipos_aceitos.join(', ')}).
+                  </Text>
+                </View>
+              </View>
+            )}
+          </>
+        )}
 
         <View className="h-32" />
       </ScrollView>
@@ -182,8 +219,11 @@ export default function ValoresScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          disabled={isLoading || isError || !data}
           onPress={handleContinue}
-          className="flex-1 py-4 rounded-full items-center bg-[#0A3D24]"
+          className={`flex-1 py-4 rounded-full items-center ${
+            !isLoading && !isError && data ? 'bg-[#0A3D24]' : 'bg-gray-300'
+          }`}
           activeOpacity={0.8}
         >
           <Text className="text-white font-bold text-[16px]">Continuar</Text>

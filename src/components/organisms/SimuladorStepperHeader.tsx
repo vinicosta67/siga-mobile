@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, TouchableOpacity, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, TouchableOpacity, Platform, StatusBar, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -27,14 +28,23 @@ export default function SimuladorStepperHeader({ currentStep, totalSteps = 6 }: 
           ))}
         </View>
 
-        {/* Back Button Container */}
-        <View className="px-2 py-2">
+        {/* Back Button and Exit Container */}
+        <View className="px-2 py-2 flex-row justify-between items-center">
           <TouchableOpacity 
             onPress={() => router.back()}
             className="p-2"
             activeOpacity={0.7}
           >
             <MaterialIcons name="arrow-back" size={24} color="#374151" />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={() => router.replace('/(tabs)/credito')}
+            className="p-2 flex-row items-center bg-gray-100 px-3 py-1.5 rounded-full mr-2"
+            activeOpacity={0.7}
+          >
+            <Text className="text-gray-600 font-bold text-[12px] mr-1">Sair</Text>
+            <MaterialIcons name="close" size={16} color="#4B5563" />
           </TouchableOpacity>
         </View>
       </View>

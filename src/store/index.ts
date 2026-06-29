@@ -3,6 +3,7 @@ import authReducer from './slices/authSlice';
 import journeyReducer from './slices/journeySlice';
 import uiReducer from './slices/uiSlice';
 import simuladorReducer from './slices/simuladorSlice';
+import complementoReducer from './slices/complementoSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     journey: journeyReducer,
     ui: uiReducer,
     simulador: simuladorReducer,
+    complemento: complementoReducer,
   },
 });
 

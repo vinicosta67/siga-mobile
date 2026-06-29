@@ -102,11 +102,11 @@ export default function Menu() {
         
         <SectionTitle title="Crédito Especializado" />
         <View className="bg-white border-y border-gray-100">
-          <MenuItem icon="local-offer" title="Oportunidades" onPress={navigateToCredit} />
-          <MenuItem icon="check-circle" title="Pré-Aprovado" onPress={navigateToCredit} />
-          <MenuItem icon="calculate" title="Simular" onPress={navigateToCredit} />
-          <MenuItem icon="description" title="Minhas Propostas" onPress={navigateToCredit} />
-          <MenuItem icon="folder-shared" title="Meus Contratos" onPress={navigateToCredit} />
+          <MenuItem icon="local-offer" title="Oportunidades" onPress={() => router.push('/(credito)/oportunidades')} />
+          <MenuItem icon="check-circle" title="Pré-Aprovado" onPress={() => router.push('/(credito)/pre-aprovado')} />
+          <MenuItem icon="calculate" title="Simular" onPress={() => router.push('/(credito)/simulador/necessidade')} />
+          <MenuItem icon="description" title="Minhas Propostas" onPress={() => router.push('/(propostas)/')} />
+          <MenuItem icon="folder-shared" title="Meus Contratos" onPress={() => router.push('/(credito)/meus-contratos')} />
         </View>
 
         <SectionTitle title="Geral" />

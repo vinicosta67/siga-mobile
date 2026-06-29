@@ -3,7 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, Platform, Statu
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PropostasMockData } from '../../src/utils/propostaMockData';
+import { useProposta } from '../../src/hooks/queries/usePropostas';
+import { ActivityIndicator } from 'react-native';
 import PropostaDetailHeader from '../../src/components/organisms/PropostaDetailHeader';
 import HorizontalStepper from '../../src/components/molecules/HorizontalStepper';
 import TimelineStatus from '../../src/components/molecules/TimelineStatus';
@@ -18,13 +19,22 @@ export default function PropostaDetailScreen() {
   
   const [activeTab, setActiveTab] = useState<'Status' | 'Dossie' | 'Garantias' | 'Pendencias'>('Status');
 
-  const proposta = PropostasMockData.find(p => p.id === id);
+  const { data: proposta, isLoading } = useProposta(id as string);
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-gray-50">
+        <ActivityIndicator size="large" color="#0A3D24" />
+        <Text className="mt-4 text-gray-500 font-medium">Buscando detalhes...</Text>
+      </View>
+    );
+  }
 
   if (!proposta) {
     return (
       <View className="flex-1 items-center justify-center bg-gray-50">
         <Text className="text-gray-500 font-medium">Proposta não encontrada.</Text>
-        <TouchableOpacity onPress={() => router.back()} className="mt-4 p-2 bg-brand-dark rounded-lg">
+        <TouchableOpacity onPress={() => router.back()} className="mt-4 px-6 py-3 bg-brand-dark rounded-xl">
           <Text className="text-white font-bold">Voltar</Text>
         </TouchableOpacity>
       </View>

@@ -8,9 +8,21 @@ import { Provider } from 'react-redux';
 import { store } from '../src/store';
 import '../src/theme/global.css';
 
+if (__DEV__) {
+  require('../ReactotronConfig');
+}
+
 import { useColorScheme } from '@/components/useColorScheme';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
@@ -43,9 +55,11 @@ export default function RootLayout() {
   }
 
   return (
-    <Provider store={store}>
-      <RootLayoutNav />
-    </Provider>
+    <QueryClientProvider client={queryClient}>
+      <Provider store={store}>
+        <RootLayoutNav />
+      </Provider>
+    </QueryClientProvider>
   );
 }
 

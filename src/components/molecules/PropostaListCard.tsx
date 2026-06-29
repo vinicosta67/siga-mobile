@@ -12,16 +12,16 @@ export default function PropostaListCard({ proposta, onPress }: PropostaListCard
   return (
     <View className="bg-white rounded-[16px] border border-gray-200 p-4 mb-4 shadow-sm">
       <View className="flex-row justify-between items-start mb-4">
-        <View className="flex-row items-center">
+        <View className="flex-row items-center flex-1 mr-2">
           <View className="bg-brand-green/10 p-2.5 rounded-xl mr-3">
             <MaterialIcons name="agriculture" size={20} color="#0A3D24" />
           </View>
-          <View>
-            <Text className="text-gray-800 font-bold text-[16px] mb-0.5">{proposta.produto}</Text>
+          <View className="flex-1">
+            <Text className="text-gray-800 font-bold text-[16px] mb-0.5" numberOfLines={1} ellipsizeMode="tail">{proposta.produto}</Text>
             <Text className="text-gray-400 font-medium text-[12px]">#{proposta.numeroProposta}</Text>
           </View>
         </View>
-        <View className="bg-blue-50 px-2.5 py-1 rounded-full">
+        <View className="bg-blue-50 px-2.5 py-1 rounded-full flex-shrink-0">
           <Text className="text-blue-600 font-bold text-[10px]">{proposta.statusLabel}</Text>
         </View>
       </View>

@@ -7,18 +7,20 @@ import Header from '@/src/components/Header';
 import HelpCenter from '@/src/components/HelpCenter';
 import InvestmentsCard from '@/src/components/InvestmentsCard';
 import PreApprovedCard from '@/src/components/PreApprovedCard';
-import ProposalCard from '@/src/components/ProposalCard';
+import PropostaListCard from '@/src/components/molecules/PropostaListCard';
 import QuickActionButtons from '@/src/components/QuickActionButtons';
 import SectionTitle from '@/src/components/SectionTitle';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, View, ActivityIndicator, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePropostas } from '@/src/hooks/queries/usePropostas';
 
 export default function Home() {
   const [isVisible, setIsVisible] = useState(true);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { data: propostas, isLoading: isLoadingPropostas } = usePropostas();
 
   const handleToggleVisibility = () => setIsVisible(!isVisible);
 
@@ -58,12 +60,25 @@ export default function Home() {
 
           <View className="mt-4">
             <SectionTitle title="Minhas Propostas" />
-            <ProposalCard
-              title="FNO-CAR"
-              id="#SIGA-2026-001847"
-              progress={58}
-              onPress={() => router.push('/(propostas)/' as any)}
-            />
+            {isLoadingPropostas ? (
+              <View className="py-8 items-center justify-center bg-white rounded-[16px] border border-gray-200">
+                <ActivityIndicator size="small" color="#0A3D24" />
+                <Text className="text-gray-500 mt-2 text-[12px]">Buscando propostas...</Text>
+              </View>
+            ) : propostas && propostas.length > 0 ? (
+              propostas.slice(0, 3).map((prop) => (
+                <View key={prop.id} className="mb-3">
+                  <PropostaListCard
+                    proposta={prop}
+                    onPress={() => router.push(`/(propostas)/${prop.id}` as any)}
+                  />
+                </View>
+              ))
+            ) : (
+              <View className="py-8 items-center justify-center bg-white rounded-[16px] border border-gray-200">
+                <Text className="text-gray-500 text-[14px]">Nenhuma proposta encontrada.</Text>
+              </View>
+            )}
           </View>
 
           <View className="mt-6">

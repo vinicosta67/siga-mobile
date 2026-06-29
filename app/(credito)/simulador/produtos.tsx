@@ -1,30 +1,21 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Platform, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { RootState } from '../../../src/store';
-import { setPerfil, setProduto, prevStep, nextStep } from '../../../src/store/slices/simuladorSlice';
+import { setProduto, prevStep, nextStep } from '../../../src/store/slices/simuladorSlice';
 import SimuladorStepperHeader from '../../../src/components/organisms/SimuladorStepperHeader';
 import SimuladorProdutoCard from '../../../src/components/organisms/SimuladorProdutoCard';
-import { CreditoMockData } from '../../../src/utils/creditoMockData';
-
-const PERFIS = [
-  { id: 'pf', label: 'Pessoa Fisica', icon: 'person' },
-  { id: 'produtor_pf', label: 'Produtor Rural PF', icon: 'agriculture' },
-  { id: 'mei', label: 'MEI', icon: 'storefront' },
-  { id: 'pme', label: 'PME', icon: 'domain' },
-  { id: 'produtor_pj', label: 'Produtor Rural PJ', icon: 'landscape' },
-];
+import { useVitrineProdutos } from '../../../src/hooks/queries/useSimulador';
 
 export default function ProdutosScreen() {
   const dispatch = useDispatch();
   const router = useRouter();
-  const { step, perfil, produtoSelecionadoId } = useSelector((state: RootState) => state.simulador);
+  const { step, necessidade, uf, produtoSelecionadoId } = useSelector((state: RootState) => state.simulador);
 
-  const handleSelectPerfil = (id: string) => {
-    dispatch(setPerfil(id === perfil ? null : id));
-  };
+  // Hook da API
+  const { data, isLoading, isError } = useVitrineProdutos(necessidade, uf);
 
   const handleSelectProduto = (id: string) => {
     dispatch(setProduto(id));
@@ -42,81 +33,71 @@ export default function ProdutosScreen() {
     }
   };
 
-  // Simulating the filtered products logic
-  const produtosDisponiveis = perfil === 'produtor_pf' 
-    ? CreditoMockData.produtos.slice(0, 2) 
-    : CreditoMockData.produtos;
+  const produtosDisponiveis = data?.produtos || [];
+  const needsMoreInfo = !necessidade || !uf;
 
   return (
     <View className="flex-1 bg-white">
       <SimuladorStepperHeader currentStep={step} />
       
-      <ScrollView className="flex-1 px-4 pt-6">
+      <ScrollView className="flex-1 px-4 pt-6" showsVerticalScrollIndicator={false}>
         <Text className="text-[32px] font-bold text-gray-900 mb-2 leading-tight">
-          Confira os produtos{'\n'}que atendem sua
+          Confira os produtos{'\n'}que atendem sua necessidade
         </Text>
         <Text className="text-[16px] text-gray-500 mb-8">
-          Selecione um produto para fazer sua simulacao.
+          Selecione um produto para simulação.
         </Text>
 
-        {/* Perfil Selection */}
-        <View className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6">
-          <View className="flex-row items-center mb-4">
-            <MaterialIcons name="person-outline" size={20} color="#0A3D24" />
-            <Text className="text-[14px] text-gray-700 ml-2">Qual seu perfil?</Text>
+        {/* Loading State or Products List */}
+        {needsMoreInfo ? (
+          <View className="items-center py-8">
+            <MaterialIcons name="touch-app" size={48} color="#D1D5DB" />
+            <Text className="text-gray-400 text-center mt-4">
+              Informações insuficientes para buscar produtos.
+            </Text>
           </View>
-          
-          <View className="flex-row flex-wrap gap-2">
-            {PERFIS.map((p) => {
-              const isActive = perfil === p.id;
-              return (
-                <TouchableOpacity
-                  key={p.id}
-                  onPress={() => handleSelectPerfil(p.id)}
-                  activeOpacity={0.7}
-                  className={`flex-row items-center px-4 py-2.5 rounded-full border ${
-                    isActive ? 'bg-green-100 border-green-600' : 'bg-white border-gray-300'
-                  }`}
-                >
-                  <MaterialIcons 
-                    name={p.icon as any} 
-                    size={16} 
-                    color={isActive ? '#16A34A' : '#4B5563'} 
-                  />
-                  <Text 
-                    className={`ml-2 text-[13px] font-bold ${
-                      isActive ? 'text-green-800' : 'text-gray-600'
-                    }`}
-                  >
-                    {p.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+        ) : isLoading ? (
+          <View className="items-center py-8">
+            <ActivityIndicator size="large" color="#0A3D24" />
+            <Text className="text-gray-500 mt-4">Buscando as melhores opções...</Text>
           </View>
-        </View>
+        ) : isError ? (
+          <View className="items-center py-8">
+            <MaterialIcons name="error-outline" size={48} color="#EF4444" />
+            <Text className="text-red-500 text-center mt-4">
+              Não foi possível carregar os produtos. Verifique sua conexão e tente novamente.
+            </Text>
+          </View>
+        ) : produtosDisponiveis.length === 0 ? (
+          <View className="items-center py-8">
+            <MaterialIcons name="info-outline" size={48} color="#F59E0B" />
+            <Text className="text-gray-500 text-center mt-4">
+              Nenhum produto encontrado para a sua região.
+            </Text>
+          </View>
+        ) : (
+          <>
+            <View className="bg-green-50 rounded-xl px-4 py-3 mb-6 flex-row items-center">
+              <MaterialIcons name="check-circle-outline" size={20} color="#16A34A" />
+              <Text className="text-green-600 font-bold ml-2">
+                {produtosDisponiveis.length} produtos disponíveis
+              </Text>
+            </View>
 
-        {/* Banner Quantity */}
-        <View className="bg-green-50 rounded-xl px-4 py-3 mb-6 flex-row items-center">
-          <MaterialIcons name="check-circle-outline" size={20} color="#16A34A" />
-          <Text className="text-green-600 font-bold ml-2">
-            {produtosDisponiveis.length} produtos disponiveis
-          </Text>
-        </View>
+            <Text className="font-bold text-[18px] text-gray-800 mb-4">
+              Temos {produtosDisponiveis.length} opções para você
+            </Text>
 
-        <Text className="font-bold text-[18px] text-gray-800 mb-4">
-          Temos {produtosDisponiveis.length} opcoes para voce
-        </Text>
-
-        {/* Products List */}
-        {produtosDisponiveis.map((produto) => (
-          <SimuladorProdutoCard
-            key={produto.id}
-            produto={produto}
-            isSelected={produtoSelecionadoId === produto.id}
-            onSelect={handleSelectProduto}
-          />
-        ))}
+            {produtosDisponiveis.map((produto) => (
+              <SimuladorProdutoCard
+                key={produto.id}
+                produto={produto}
+                isSelected={produtoSelecionadoId === produto.id}
+                onSelect={handleSelectProduto}
+              />
+            ))}
+          </>
+        )}
 
         <View className="h-32" />
       </ScrollView>
@@ -138,7 +119,7 @@ export default function ProdutosScreen() {
           disabled={!produtoSelecionadoId}
           onPress={handleContinue}
           className={`flex-1 py-4 rounded-full items-center ${
-            produtoSelecionadoId ? 'bg-gray-600' : 'bg-gray-400'
+            produtoSelecionadoId ? 'bg-[#0A3D24]' : 'bg-gray-400'
           }`}
           activeOpacity={0.8}
         >
