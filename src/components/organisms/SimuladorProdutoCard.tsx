@@ -6,7 +6,7 @@ import { VitrineProduto } from '../../hooks/queries/useSimulador';
 interface SimuladorProdutoCardProps {
   produto: VitrineProduto;
   isSelected: boolean;
-  onSelect: (id: string) => void;
+  onSelect: () => void;
 }
 
 export default function SimuladorProdutoCard({
@@ -25,15 +25,30 @@ export default function SimuladorProdutoCard({
 
   const styleMap = getStyleMap(produto.id);
 
+  const publicoAlvo = (produto.publico_alvo || '').toUpperCase();
+  const exclusivelyPF = publicoAlvo.includes('FÍSICA') && !publicoAlvo.includes('JURÍDICA');
+  const exclusivelyPJ = publicoAlvo.includes('JURÍDICA') && !publicoAlvo.includes('FÍSICA');
+
+  const allowPF = !exclusivelyPJ;
+  const allowPJ = !exclusivelyPF;
+
+  let badgeText = 'PF / PJ';
+  if (allowPF && !allowPJ) badgeText = 'Apenas PF';
+  if (!allowPF && allowPJ) badgeText = 'Apenas PJ';
+
   return (
     <TouchableOpacity
       activeOpacity={0.7}
-      onPress={() => onSelect(produto.id)}
-      className={`bg-white rounded-2xl border mb-4 shadow-sm ${
+      onPress={onSelect}
+      className={`bg-white rounded-2xl border mb-4 shadow-sm relative overflow-hidden ${
         isSelected ? 'border-[#0A3D24]' : 'border-gray-200'
       }`}
     >
-      <View className="p-4 flex-row items-center">
+      <View className="absolute top-0 right-0 bg-gray-100 px-3 py-1 rounded-bl-xl border-b border-l border-gray-200">
+        <Text className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{badgeText}</Text>
+      </View>
+
+      <View className="p-4 pt-6 flex-row items-center">
         <View className="w-14 h-14 rounded-full bg-[#0A3D24] items-center justify-center mr-4">
           <MaterialIcons name={styleMap.icon as any} size={28} color="#FFFFFF" />
         </View>

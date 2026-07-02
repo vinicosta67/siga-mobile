@@ -5,6 +5,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, Te
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../../../../src/store';
 import { setEndereco } from '../../../../../src/store/slices/complementoSlice';
+import { updateProposal } from '../../../../../src/services/proposalService';
 
 const formatCEP = (v: string) => {
   const digits = v.replace(/\D/g, '').slice(0, 8);
@@ -28,6 +29,7 @@ export default function EnderecoComplementoScreen() {
   const [complemento, setComplemento] = useState(enderecoState.complemento || '');
 
   const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchCep = async (cepStr: string) => {
     const cleanCep = cepStr.replace(/\D/g, '');
@@ -58,7 +60,24 @@ export default function EnderecoComplementoScreen() {
     }
   };
 
-  const handleContinue = () => {
+  const saveToBackend = async () => {
+    const payload = {
+      zip: cep.replace(/\D/g, ''),
+      state: uf,
+      city: cidade,
+      neighborhood: bairro,
+      address: logradouro,
+      addressInfo: {
+        numero,
+        complemento,
+      }
+    };
+    if (id) {
+      await updateProposal(id as string, payload);
+    }
+  };
+
+  const handleContinue = async () => {
     dispatch(
       setEndereco({
         cep,
@@ -71,10 +90,31 @@ export default function EnderecoComplementoScreen() {
       })
     );
 
-    router.push({
-      pathname: `/(credito)/proposta/${id}/complemento/negocio` as any,
-      params: { produto_id, tipo_produto },
-    });
+    setIsSubmitting(true);
+    try {
+      await saveToBackend();
+      router.push({
+        pathname: `/(credito)/proposta/${id}/complemento/contato` as any,
+        params: { produto_id, tipo_produto },
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveAndExit = async () => {
+    dispatch(setEndereco({ cep, logradouro, bairro, cidade, uf, numero, complemento }));
+    setIsSubmitting(true);
+    try {
+      await saveToBackend();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+      router.replace("/(tabs)/credito");
+    }
   };
 
   const isValid = cep.length === 9 && logradouro && bairro && cidade && uf && numero;
@@ -88,11 +128,19 @@ export default function EnderecoComplementoScreen() {
         <View className="flex-row items-center justify-between mb-6 mt-4">
           <View className="flex-row items-center flex-1 mr-8">
             <View className="h-2 flex-1 bg-[#92dc49] rounded-full mr-1" />
-            <View className="h-2 flex-1 bg-gray-200 rounded-full mx-1" />
+            <View className="h-2 flex-1 bg-[#92dc49] rounded-full mx-1" />
             <View className="h-2 flex-1 bg-gray-200 rounded-full ml-1" />
           </View>
-          <TouchableOpacity onPress={() => router.replace("/(tabs)/credito")} className="flex-row items-center bg-gray-100 px-3 py-1.5 rounded-full">
-            <Text className="text-gray-600 font-bold text-[12px] mr-1">Salvar e Sair</Text>
+          <TouchableOpacity 
+            onPress={handleSaveAndExit} 
+            disabled={isSubmitting}
+            className="flex-row items-center bg-gray-100 px-3 py-1.5 rounded-full"
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#4B5563" className="mr-1" />
+            ) : (
+              <Text className="text-gray-600 font-bold text-[12px] mr-1">Salvar e Sair</Text>
+            )}
             <MaterialIcons name="close" size={16} color="#4B5563" />
           </TouchableOpacity>
         </View>
@@ -222,13 +270,14 @@ export default function EnderecoComplementoScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          disabled={!isValid}
+          disabled={!isValid || isSubmitting}
           onPress={handleContinue}
-          className={`flex-[2] py-4 rounded-full items-center ${
-            isValid ? 'bg-[#92dc49]' : 'bg-gray-300'
+          className={`flex-[2] py-4 rounded-full flex-row items-center justify-center ${
+            isValid && !isSubmitting ? 'bg-[#92dc49]' : 'bg-gray-300'
           }`}
           activeOpacity={0.8}
         >
+          {isSubmitting && <ActivityIndicator size="small" color="#ffffff" className="mr-2" />}
           <Text className="text-white font-bold text-[16px]">Continuar</Text>
         </TouchableOpacity>
       </View>

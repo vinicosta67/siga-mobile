@@ -6,6 +6,7 @@ export interface SimuladorState {
   perfil: string | null;
   uf: string | null;
   produtoSelecionadoId: string | null;
+  produtoSelecionadoNome: string | null;
 
   // Etapa 3
   valorDesejado: number;
@@ -35,6 +36,7 @@ const initialState: SimuladorState = {
   perfil: null,
   uf: null,
   produtoSelecionadoId: null,
+  produtoSelecionadoNome: null,
 
   valorDesejado: 0,
 
@@ -63,8 +65,9 @@ const simuladorSlice = createSlice({
     setUf: (state, action: PayloadAction<string | null>) => {
       state.uf = action.payload;
     },
-    setProduto: (state, action: PayloadAction<string>) => {
-      state.produtoSelecionadoId = action.payload;
+    setProduto: (state, action: PayloadAction<{ id: string; nome: string }>) => {
+      state.produtoSelecionadoId = action.payload.id;
+      state.produtoSelecionadoNome = action.payload.nome;
       state.garantiasSelecionadas = [];
     },
     setValorDesejado: (state, action: PayloadAction<number>) => {

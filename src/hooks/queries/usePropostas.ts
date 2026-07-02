@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getProposals, getProposalById } from '../../services/proposalService';
+import { storage } from '../../services/storage';
 
 export interface BackendProposal {
   id: string;
@@ -69,7 +70,8 @@ export const usePropostas = () => {
         garantias: [],
         pendencias: []
       }));
-    }
+    },
+    enabled: !!storage.getString('siga_logger_token'),
   });
 };
 

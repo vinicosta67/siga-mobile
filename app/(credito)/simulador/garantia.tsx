@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Platform, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { RootState } from '../../../src/store';
-import { addGarantia, removeGarantia, prevStep, nextStep } from '../../../src/store/slices/simuladorSlice';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import SimuladorStepperHeader from '../../../src/components/organisms/SimuladorStepperHeader';
 import { useProdutoDetalhes } from '../../../src/hooks/queries/useSimulador';
+import { RootState } from '../../../src/store';
+import { addGarantia, nextStep, prevStep, removeGarantia } from '../../../src/store/slices/simuladorSlice';
 
 const getIconForGarantia = (nome: string) => {
   const n = nome.toLowerCase();
@@ -36,7 +36,13 @@ export default function GarantiaScreen() {
   const [descricao, setDescricao] = useState('');
   const [valorGarantiaStr, setValorGarantiaStr] = useState('');
 
-  const garantiasDisponiveis = data?.garantias_exigidas ? [...data.garantias_exigidas.tipos_aceitos] : [];
+  const garantiasDisponiveis = data?.garantias_exigidas?.tipos_aceitos ? [...data.garantias_exigidas.tipos_aceitos] : [];
+
+
+  if (garantiasDisponiveis.length === 0) {
+    garantiasDisponiveis.push('Alienação Fiduciária', 'Hipoteca', 'Avalista', 'Penhor Agrícola');
+  }
+
   if (data?.garantias_exigidas?.fundo_garantidor_disponivel) {
     const nomeFundo = data.garantias_exigidas.fundo_garantidor_nome || 'Fundo de Aval';
     if (!garantiasDisponiveis.includes(nomeFundo)) {
@@ -56,11 +62,11 @@ export default function GarantiaScreen() {
 
   const handleAddGarantia = () => {
     if (!tipoGarantia || !descricao || !valorGarantiaStr) return;
-    
+
     // Corrige a regex que também estava errada (\\D)
     const numericValue = valorGarantiaStr.replace(/\D/g, '');
     const valor = Number(numericValue) / 100;
-    
+
     if (isNaN(valor) || valor <= 0) return;
 
     dispatch(addGarantia({ tipo: tipoGarantia, descricao, valor }));
@@ -72,28 +78,28 @@ export default function GarantiaScreen() {
 
   const handleValorChange = (text: string) => {
     let digits = text.replace(/\D/g, '');
-    
+
     if (!digits) {
       setValorGarantiaStr('');
       return;
     }
-    
+
     // Converte para inteiro para remover zeros à esquerda
     const numberValue = parseInt(digits, 10);
     if (isNaN(numberValue)) {
       setValorGarantiaStr('');
       return;
     }
-    
+
     // Garante no mínimo 3 dígitos para formatar os centavos
     digits = numberValue.toString().padStart(3, '0');
-    
+
     const integerPart = digits.slice(0, -2);
     const decimalPart = digits.slice(-2);
-    
+
     // Expressão regular universal e segura para formato de milhares brasileiro (ponto)
     const formattedInteger = integerPart.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
-    
+
     setValorGarantiaStr(`${formattedInteger},${decimalPart}`);
   };
 
@@ -131,20 +137,20 @@ export default function GarantiaScreen() {
   const minGarantiaObrigatoria = data.garantias_exigidas.garantia_valor_minimo_obrigatorio;
   // minGarantiaObrigatoria == 0 significa que é SEMPRE obrigatória independente do valor.
   const isObrigatorio = data.garantias_exigidas.garantia_real_obrigatoria && (minGarantiaObrigatoria === 0 || valorDesejado >= (minGarantiaObrigatoria || 99999999));
-  
+
   const coberturaNecessaria = data.garantias_exigidas.cobertura_maxima_exigida || 100;
   const valorTotalExigido = valorDesejado * (coberturaNecessaria / 100);
-  
+
   const somaGarantias = garantiasSelecionadas.reduce((acc, curr) => acc + curr.valor, 0);
   const progresso = Math.min((somaGarantias / valorTotalExigido) * 100, 100);
-  
+
   const isSuficiente = somaGarantias >= valorTotalExigido;
   const podeContinuar = isObrigatorio ? isSuficiente : true;
 
   return (
     <View className="flex-1 bg-white">
       <SimuladorStepperHeader currentStep={step} />
-      
+
       <ScrollView className="flex-1 px-4 pt-6" showsVerticalScrollIndicator={false}>
         <Text className="text-[32px] font-bold text-gray-900 mb-2 leading-tight">Garantias</Text>
         <Text className="text-[16px] text-gray-500 mb-6">Cadastre os bens que servirão de garantia para esta operação.</Text>
@@ -167,7 +173,7 @@ export default function GarantiaScreen() {
               </Text>
             </View>
             <View className="h-2 w-full bg-gray-200 rounded-full overflow-hidden mb-3">
-            <View className={`h-full ${isSuficiente ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${progresso}%` }} />
+              <View className={`h-full ${isSuficiente ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${progresso}%` }} />
             </View>
             <Text className="text-[12px] text-gray-500 text-center">
               Necessário: <Text className="font-bold text-gray-800">{formatCurrency(valorTotalExigido)}</Text> ({coberturaNecessaria}%)
@@ -271,7 +277,7 @@ export default function GarantiaScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      <View 
+      <View
         className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 flex-row gap-4"
         style={{ paddingBottom: Platform.OS === 'ios' ? 32 : 16 }}
       >

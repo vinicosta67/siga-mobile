@@ -6,6 +6,7 @@
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo/vector-icons": "^15.1.1",
     "@hookform/resolvers": "^5.4.0",
+    "@react-native-async-storage/async-storage": "^3.1.1",
     "@react-native-community/slider": "^5.2.0",
     "@reduxjs/toolkit": "^2.12.0",
     "@tanstack/react-query": "^5.101.1",
@@ -45,7 +46,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@react-native/jest-preset": "^0.86.0",
+    "@react-native/jest-preset": "~0.85.3",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^29.5.0",
@@ -63,7 +64,7 @@
     "web": "expo start --web --port 8082",
     "test": "jest",
     "build:android": "expo prebuild --platform android --clean && cd android && gradlew bundleRelease",
-    "build:apk": "expo prebuild --platform android --clean && cd android && gradlew assembleRelease",
+    "build:apk": "expo prebuild --platform android --clean && cd android && gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a",
     "build:dev:apk": "cross-env APP_ENV=development expo prebuild --platform android --clean && cd android && gradlew assembleDebug"
   },
   "private": true

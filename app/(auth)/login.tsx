@@ -21,6 +21,7 @@ export default function LoginScreen() {
   // Estados para lidar com o foco
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -142,14 +143,23 @@ export default function LoginScreen() {
                     className="flex-1 py-4 px-3 text-gray-800 font-medium"
                     placeholder="••••••••"
                     placeholderTextColor="#9CA3AF"
-                    secureTextEntry
+                    secureTextEntry={!showPassword}
                     value={password}
                     onChangeText={setPassword}
                     onFocus={() => setIsPasswordFocused(true)}
                     onBlur={() => setIsPasswordFocused(false)}
                   />
-                  <MaterialIcons name="visibility" size={20} color="#9CA3AF" />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} accessibilityRole="button" accessibilityLabel="Mostrar senha">
+                    <MaterialIcons name={showPassword ? "visibility-off" : "visibility"} size={24} color="#9CA3AF" />
+                  </TouchableOpacity>
                 </View>
+                
+                <TouchableOpacity 
+                  className="mt-3 self-end" 
+                  onPress={() => router.push('/(auth)/esqueci-senha')}
+                >
+                  <Text className="text-[#0A3D24] font-bold text-sm">Esqueceu sua senha?</Text>
+                </TouchableOpacity>
               </View>
 
               {error ? (
@@ -172,7 +182,13 @@ export default function LoginScreen() {
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity className="mt-6 items-center">
+              <TouchableOpacity className="mt-6 items-center" onPress={() => router.push('/(auth)/registro/')}>
+                <Text className="text-gray-500 font-medium text-sm">
+                  Novo por aqui? <Text className="text-[#0A3D24] font-bold">Criar Conta</Text>
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity className="mt-2 items-center">
                 <Text className="text-gray-500 font-medium text-sm">
                   Problemas com acesso? <Text className="text-[#0A3D24] font-bold">Suporte TI</Text>
                 </Text>

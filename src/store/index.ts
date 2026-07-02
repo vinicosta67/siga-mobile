@@ -4,6 +4,7 @@ import journeyReducer from './slices/journeySlice';
 import uiReducer from './slices/uiSlice';
 import simuladorReducer from './slices/simuladorSlice';
 import complementoReducer from './slices/complementoSlice';
+import registerReducer from './slices/registerSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     ui: uiReducer,
     simulador: simuladorReducer,
     complemento: complementoReducer,
+    register: registerReducer,
   },
 });
 

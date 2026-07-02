@@ -74,8 +74,9 @@ export default function ValoresScreen() {
     if (!data?.regras_simulacao) return;
 
     let finalValue = valorDesejado;
+    let safeMax = Math.max(data.regras_simulacao.valor_min, data.regras_simulacao.valor_max);
     if (finalValue < data.regras_simulacao.valor_min) finalValue = data.regras_simulacao.valor_min;
-    if (finalValue > data.regras_simulacao.valor_max) finalValue = data.regras_simulacao.valor_max;
+    if (finalValue > safeMax) finalValue = safeMax;
 
     dispatch(setValorDesejado(finalValue));
     dispatch(nextStep());
@@ -152,13 +153,13 @@ export default function ValoresScreen() {
             {/* Min/Max Limits */}
             <View className="flex-row justify-between mb-8">
               <Text className="text-[12px] text-gray-400">Min: {formatCurrencyDisplay(data.regras_simulacao.valor_min)}</Text>
-              <Text className="text-[12px] text-gray-400">Max: {formatCurrencyDisplay(data.regras_simulacao.valor_max)}</Text>
+              <Text className="text-[12px] text-gray-400">Max: {formatCurrencyDisplay(Math.max(data.regras_simulacao.valor_min, data.regras_simulacao.valor_max))}</Text>
             </View>
 
             {/* Slider */}
             <BASASlider
               min={data.regras_simulacao.valor_min}
-              max={data.regras_simulacao.valor_max}
+              max={Math.max(data.regras_simulacao.valor_min, data.regras_simulacao.valor_max)}
               value={valorDesejado}
               onValueChange={handleSliderChange}
             />
@@ -194,7 +195,10 @@ export default function ValoresScreen() {
                     Exigência de Garantia Real
                   </Text>
                   <Text className="text-yellow-700 text-[12px] leading-relaxed">
-                    Valores a partir de {formatCurrencyDisplay(data.garantias_exigidas.garantia_valor_minimo_obrigatorio || 0)} exigem a apresentação de bens como garantia ({data.garantias_exigidas.tipos_aceitos.join(', ')}).
+                    Valores a partir de {formatCurrencyDisplay(data.garantias_exigidas.garantia_valor_minimo_obrigatorio || 0)} exigem a apresentação de bens como garantia 
+                    {data.garantias_exigidas.tipos_aceitos?.length > 0 
+                      ? ` (${data.garantias_exigidas.tipos_aceitos.join(', ')})`
+                      : ' (Alienação Fiduciária, Hipoteca, etc)'}.
                   </Text>
                 </View>
               </View>

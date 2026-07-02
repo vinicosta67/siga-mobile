@@ -41,6 +41,7 @@ export interface ProdutoDetalhesResponse {
     especificos: string[];
     condicionantes: string[];
   };
+  publico_alvo?: string;
 }
 
 export interface CalcularParcelasRequest {

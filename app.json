@@ -35,6 +35,13 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O aplicativo SIGA precisa acessar sua galeria para que você possa anexar imagens de documentos à sua proposta de crédito.",
+          "cameraPermission": "O aplicativo SIGA precisa acessar sua câmera para que você possa fotografar e enviar seus documentos diretamente na plataforma."
+        }
       ]
     ],
     "experiments": {

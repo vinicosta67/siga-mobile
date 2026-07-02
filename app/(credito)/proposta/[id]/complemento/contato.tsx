@@ -98,6 +98,28 @@ export default function ContatoComplementoScreen() {
     }
   };
 
+  const saveToBackend = async () => {
+    const payload = {
+      email,
+      phone: telefone.replace(/\D/g, ''),
+    };
+    const proposalId = typeof id === 'string' ? id : String(id);
+    await updateProposal(proposalId, payload);
+  };
+
+  const handleSaveAndExit = async () => {
+    dispatch(setContato({ telefone, email }));
+    setIsSubmitting(true);
+    try {
+      await saveToBackend();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+      router.replace("/(tabs)/credito");
+    }
+  };
+
   const isValid = telefone.replace(/\D/g, '').length >= 10 && email.includes('@');
 
   return (
@@ -112,8 +134,16 @@ export default function ContatoComplementoScreen() {
             <View className="h-2 flex-1 bg-[#92dc49] rounded-full mx-1" />
             <View className="h-2 flex-1 bg-[#92dc49] rounded-full ml-1" />
           </View>
-          <TouchableOpacity onPress={() => router.replace("/(tabs)/credito")} className="flex-row items-center bg-gray-100 px-3 py-1.5 rounded-full">
-            <Text className="text-gray-600 font-bold text-[12px] mr-1">Salvar e Sair</Text>
+          <TouchableOpacity 
+            onPress={handleSaveAndExit}
+            disabled={isSubmitting} 
+            className="flex-row items-center bg-gray-100 px-3 py-1.5 rounded-full"
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#4B5563" className="mr-1" />
+            ) : (
+              <Text className="text-gray-600 font-bold text-[12px] mr-1">Salvar e Sair</Text>
+            )}
             <MaterialIcons name="close" size={16} color="#4B5563" />
           </TouchableOpacity>
         </View>

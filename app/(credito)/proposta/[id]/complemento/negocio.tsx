@@ -1,10 +1,12 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { updateProposal } from '../../../../../src/services/proposalService';
 import { RootState } from '../../../../../src/store';
 import { setNegocio } from '../../../../../src/store/slices/complementoSlice';
+import { useProdutoDetalhes } from '../../../../../src/hooks/queries/useSimulador';
 
 export default function NegocioComplementoScreen() {
   const router = useRouter();
@@ -14,11 +16,27 @@ export default function NegocioComplementoScreen() {
 
   const negocioState = useSelector((state: RootState) => state.complemento);
 
-  const prodId = typeof produto_id === 'string' ? produto_id.toUpperCase() : '';
-  const isRural = prodId.includes('RURAL') || prodId.includes('AGRO') || prodId.includes('FNO');
-  const isPJ = prodId.includes('PJ') || prodId.includes('EMPRESA');
+  const { data: produtoData, isLoading: isLoadingProduto } = useProdutoDetalhes(produto_id as string);
+  
+  const publicoAlvo = (produtoData?.publico_alvo || '').toUpperCase();
+  const exclusivelyPF = publicoAlvo.includes('FÍSICA') && !publicoAlvo.includes('JURÍDICA');
+  const exclusivelyPJ = publicoAlvo.includes('JURÍDICA') && !publicoAlvo.includes('FÍSICA');
 
-  const defaultTipo = isPJ ? 'PJ' : 'PF';
+  const allowPF = !exclusivelyPJ;
+  const allowPJ = !exclusivelyPF;
+
+  // Determinar o defaultTipo
+  let defaultTipo: 'PF' | 'PJ' = 'PF';
+  if (!allowPF && allowPJ) defaultTipo = 'PJ';
+  else if (allowPF && !allowPJ) defaultTipo = 'PF';
+  else {
+    // Fallback original se ambos são permitidos ou se não tem publicoAlvo
+    const prodIdStr = typeof produto_id === 'string' ? produto_id.toUpperCase() : '';
+    if (prodIdStr.includes('PJ') || prodIdStr.includes('EMPRESA')) {
+      defaultTipo = 'PJ';
+    }
+  }
+
   const [tipoPessoa, setTipoPessoa] = useState<'PF' | 'PJ'>(negocioState.tipoPessoa || defaultTipo);
 
   const [documento, setDocumento] = useState(negocioState.cpfCnpj || '');
@@ -26,6 +44,7 @@ export default function NegocioComplementoScreen() {
   const [faturamento, setFaturamento] = useState(negocioState.faturamento ? String(negocioState.faturamento) : '');
   const [cultura, setCultura] = useState(negocioState.culturaPrincipal || '');
   const [tamanho, setTamanho] = useState(negocioState.tamanhoColaboradores || '');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const formatDoc = (v: string, tipo: 'PF' | 'PJ') => {
     const digits = v.replace(/\D/g, '');
@@ -56,7 +75,20 @@ export default function NegocioComplementoScreen() {
     setFaturamento(val.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
   };
 
-  const handleContinue = () => {
+  const saveToBackend = async () => {
+    const payload = {
+      companyName: nome,
+      revenue: faturamento ? parseFloat(faturamento.replace(/\./g, '').replace(',', '.')) : 0,
+      clientDocumentNumber: documento.replace(/\D/g, ''),
+      industry: cultura,
+      size: tamanho,
+    };
+    if (id) {
+      await updateProposal(id as string, payload);
+    }
+  };
+
+  const handleContinue = async () => {
     dispatch(
       setNegocio({
         tipoPessoa,
@@ -68,18 +100,48 @@ export default function NegocioComplementoScreen() {
       })
     );
 
-    router.push({
-      pathname: `/(credito)/proposta/${id}/complemento/contato` as any,
-      params,
-    });
+    setIsSubmitting(true);
+    try {
+      await saveToBackend();
+      router.push({
+        pathname: `/(credito)/proposta/${id}/complemento/endereco` as any,
+        params,
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveAndExit = async () => {
+    dispatch(
+      setNegocio({
+        tipoPessoa,
+        cpfCnpj: documento.replace(/\D/g, ''),
+        nomeRazaoSocial: nome,
+        faturamento: faturamento ? parseFloat(faturamento.replace(/\./g, '').replace(',', '.')) : 0,
+        culturaPrincipal: cultura,
+        tamanhoColaboradores: tamanho,
+      })
+    );
+    setIsSubmitting(true);
+    try {
+      await saveToBackend();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+      router.replace("/(tabs)/credito");
+    }
   };
 
   const isDocValid = tipoPessoa === 'PF' ? documento.replace(/\D/g, '').length === 11 : documento.replace(/\D/g, '').length === 14;
   const isNomeValid = nome.length > 3;
   const isFaturamentoValid = faturamento.length > 0;
-  
+
   let isValid = isDocValid && isNomeValid && isFaturamentoValid;
-  if (isRural && !cultura) isValid = false;
+  if (!cultura && publicoAlvo.includes('RURAL')) isValid = false; // Se for rural, exige cultura
   if (tipoPessoa === 'PJ' && !tamanho) isValid = false;
 
   return (
@@ -91,11 +153,19 @@ export default function NegocioComplementoScreen() {
         <View className="flex-row items-center justify-between mb-6 mt-4">
           <View className="flex-row items-center flex-1 mr-8">
             <View className="h-2 flex-1 bg-[#92dc49] rounded-full mr-1" />
-            <View className="h-2 flex-1 bg-[#92dc49] rounded-full mx-1" />
+            <View className="h-2 flex-1 bg-gray-200 rounded-full mx-1" />
             <View className="h-2 flex-1 bg-gray-200 rounded-full ml-1" />
           </View>
-          <TouchableOpacity onPress={() => router.replace("/(tabs)/credito")} className="flex-row items-center bg-gray-100 px-3 py-1.5 rounded-full">
-            <Text className="text-gray-600 font-bold text-[12px] mr-1">Salvar e Sair</Text>
+          <TouchableOpacity
+            onPress={handleSaveAndExit}
+            disabled={isSubmitting}
+            className="flex-row items-center bg-gray-100 px-3 py-1.5 rounded-full"
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#4B5563" className="mr-1" />
+            ) : (
+              <Text className="text-gray-600 font-bold text-[12px] mr-1">Salvar e Sair</Text>
+            )}
             <MaterialIcons name="close" size={16} color="#4B5563" />
           </TouchableOpacity>
         </View>
@@ -104,12 +174,12 @@ export default function NegocioComplementoScreen() {
           Detalhes do Negócio
         </Text>
         <Text className="text-[16px] text-gray-500 mb-8">
-          Precisamos identificar {isRural ? 'o produtor/empresa' : 'a empresa'} para a análise de crédito.
+          Precisamos identificar {allowPF && allowPJ ? 'o produtor/empresa' : tipoPessoa === 'PJ' ? 'a empresa' : 'o cliente'} para a análise de crédito.
         </Text>
-
         <View className="space-y-6 mb-8">
-          {/* Se for Rural, permite escolher PF ou PJ. Se for corporate, já fixa em PJ. Se for Pessoal, fixa em PF. */}
-          {isRural && (
+          {isLoadingProduto ? (
+            <ActivityIndicator size="small" color="#92dc49" />
+          ) : (allowPF && allowPJ) ? (
             <View className="flex-row gap-4 mb-2">
               <TouchableOpacity
                 onPress={() => { setTipoPessoa('PF'); setDocumento(''); }}
@@ -126,7 +196,7 @@ export default function NegocioComplementoScreen() {
                 <Text className={`ml-2 font-bold ${tipoPessoa === 'PJ' ? 'text-[#0A3D24]' : 'text-gray-400'}`}>Pessoa Jurídica</Text>
               </TouchableOpacity>
             </View>
-          )}
+          ) : null}
 
           <View>
             <Text className="text-[14px] text-gray-700 font-bold mb-1 ml-1">{tipoPessoa === 'PF' ? 'CPF' : 'CNPJ'}</Text>
@@ -172,7 +242,7 @@ export default function NegocioComplementoScreen() {
             </View>
           </View>
 
-          {isRural && (
+          {(publicoAlvo.includes('RURAL') || (!publicoAlvo && typeof produto_id === 'string' && produto_id.toUpperCase().includes('RURAL'))) && (
             <View>
               <Text className="text-[14px] text-gray-700 font-bold mb-1 ml-1">Cultura Principal (Segmento)</Text>
               <View className="bg-gray-50 border border-gray-200 rounded-2xl px-4 h-14 justify-center">
@@ -221,13 +291,13 @@ export default function NegocioComplementoScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          disabled={!isValid}
+          disabled={!isValid || isSubmitting}
           onPress={handleContinue}
-          className={`flex-[2] py-4 rounded-full items-center ${
-            isValid ? 'bg-[#92dc49]' : 'bg-gray-300'
-          }`}
+          className={`flex-[2] py-4 rounded-full flex-row items-center justify-center ${isValid && !isSubmitting ? 'bg-[#92dc49]' : 'bg-gray-300'
+            }`}
           activeOpacity={0.8}
         >
+          {isSubmitting && <ActivityIndicator size="small" color="#ffffff" className="mr-2" />}
           <Text className="text-white font-bold text-[16px]">Continuar</Text>
         </TouchableOpacity>
       </View>

@@ -17,8 +17,8 @@ export default function ProdutosScreen() {
   // Hook da API
   const { data, isLoading, isError } = useVitrineProdutos(necessidade, uf);
 
-  const handleSelectProduto = (id: string) => {
-    dispatch(setProduto(id));
+  const handleSelectProduto = (id: string, nome: string) => {
+    dispatch(setProduto({ id, nome }));
   };
 
   const handleBack = () => {
@@ -93,7 +93,7 @@ export default function ProdutosScreen() {
                 key={produto.id}
                 produto={produto}
                 isSelected={produtoSelecionadoId === produto.id}
-                onSelect={handleSelectProduto}
+                onSelect={() => handleSelectProduto(produto.id, produto.nome)}
               />
             ))}
           </>

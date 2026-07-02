@@ -12,6 +12,7 @@ export default function IniciarPropostaScreen() {
   const dispatch = useDispatch();
   const params = useLocalSearchParams();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { produtoSelecionadoNome } = useSelector((state: RootState) => state.simulador);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -32,10 +33,21 @@ export default function IniciarPropostaScreen() {
             try { garantiasParseadas = JSON.parse(garantias); } catch(e) {}
         }
 
+        const nomeProdutoUpper = (produtoSelecionadoNome || '').toUpperCase();
+        const isAgro = 
+          nomeProdutoUpper.includes('RURAL') || 
+          nomeProdutoUpper.includes('AGRO') || 
+          nomeProdutoUpper.includes('PRONAF') || 
+          nomeProdutoUpper.includes('CUSTEIO') || 
+          nomeProdutoUpper.includes('FLORESTAL') || 
+          nomeProdutoUpper.includes('IRRIGAÇÃO');
+
+        const tipoCreditoStr = isAgro ? 'Crédito Rural' : 'Crédito Empresarial';
+
         const payload = {
-          title: 'Solicitação de Crédito via Mobile',
-          type: 'Crédito Pessoal', // Pode ser ajustado conforme perfil (rural, empresarial)
-          creditType: 'Crédito Pessoal',
+          title: produtoSelecionadoNome ? `Solicitação - ${produtoSelecionadoNome}` : 'Solicitação de Crédito via Mobile',
+          type: tipoCreditoStr,
+          creditType: tipoCreditoStr,
           requestedValue: Number(valor_solicitado),
           financedValue: Number(valor_solicitado) * 0.8, // Exemplo de regra (ajustar no back)
           term: Number(prazo_meses),
@@ -60,9 +72,9 @@ export default function IniciarPropostaScreen() {
         // Limpa o estado da simulação pois a proposta já foi persistida
         dispatch(resetSimulador());
 
-        // Navega para o fluxo de coleta de dados complementares
+        // Navega para o fluxo de coleta de dados complementares (começando pelo Negócio para identificar PF/PJ)
         router.replace({
-          pathname: `/(credito)/proposta/${result.proposal.id}/complemento/endereco` as any,
+          pathname: `/(credito)/proposta/${result.proposal.id}/complemento/negocio` as any,
           params: { produto_id, tipo_produto: payload.type }
         });
 
